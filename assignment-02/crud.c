@@ -1,94 +1,145 @@
 #include <stdio.h>
-#include <ctype.h>
+
+#define FILENAME "users.txt"
+
+typedef struct {
+    int id;
+    char name[50];
+    int age;
+} User;
+
+void createUser() {
+    User u, temp;
+    int exists = 0;
+
+    printf("Enter ID: ");
+    scanf("%d", &u.id);
+
+    FILE *fp = fopen(FILENAME, "r");
+
+    while (fscanf(fp, "%d %s %d", &temp.id, temp.name, &temp.age) == 3) {
+        if (temp.id == u.id) {
+            exists = 1;
+            break;
+        }
+    }
+
+    fclose(fp);
+
+    if (exists) {
+        printf("ID already exists.\n");
+        return;
+    }
+
+    printf("Enter Name: ");
+    scanf("%s", u.name);
+
+    printf("Enter Age: ");
+    scanf("%d", &u.age);
+
+    fp = fopen(FILENAME, "a");
+    fprintf(fp, "%d %s %d\n", u.id, u.name, u.age);
+    fclose(fp);
+
+    printf("User added.\n");
+}
+
+void readUsers() {
+    FILE *fp = fopen(FILENAME, "r");
+    User u;
+
+    printf("\nID    Name       Age\n");
+
+    while (fscanf(fp, "%d %s %d", &u.id, u.name, &u.age) == 3) {
+        printf("%-5d %-10s %d\n", u.id, u.name, u.age);
+    }
+
+    fclose(fp);
+}
+
+void updateUser() {
+    int targetId;
+
+    printf("Enter ID to update: ");
+    scanf("%d", &targetId);
+
+    FILE *fp = fopen(FILENAME, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    User u;
+
+    while (fscanf(fp, "%d %s %d", &u.id, u.name, &u.age) == 3) {
+        if (u.id == targetId) {
+            printf("Enter new Name: ");
+            scanf("%s", u.name);
+
+            printf("Enter new Age: ");
+            scanf("%d", &u.age);
+        }
+
+        fprintf(temp, "%d %s %d\n", u.id, u.name, u.age);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    remove(FILENAME);
+    rename("temp.txt", FILENAME);
+
+    printf("User updated.\n");
+}
+
+void deleteUser() {
+    int targetId;
+
+    printf("Enter ID to delete: ");
+    scanf("%d", &targetId);
+
+    FILE *fp = fopen(FILENAME, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    User u;
+
+    while (fscanf(fp, "%d %s %d", &u.id, u.name, &u.age) == 3) {
+        if (u.id != targetId) {
+            fprintf(temp, "%d %s %d\n", u.id, u.name, u.age);
+        }
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    remove(FILENAME);
+    rename("temp.txt", FILENAME);
+
+    printf("User deleted.\n");
+}
 
 int main() {
-    char str[100];
-    int values[50], n = 0;
-    char operators[50];
-    int m = 0;
-    int i = 0, value, answer;
+    int choice;
 
-    printf("Enter expression: ");
-    fgets(str, sizeof(str), stdin);
+    FILE *fp = fopen(FILENAME, "a");
+    fclose(fp);
 
-    while (str[i] != '\0') {
+    while (1) {
+        printf("\n1. Create\n");
+        printf("2. Read\n");
+        printf("3. Update\n");
+        printf("4. Delete\n");
+        printf("5. Exit\n");
 
-        while (isspace(str[i]))
-            i++;
+        printf("Enter choice: ");
+        scanf("%d", &choice);
 
-        if (!isdigit(str[i])) {
-            printf("Error: Invalid expression.\n");
-            return 0;
-        }
-
-        value = 0;
-
-        while (isdigit(str[i])) {
-            value = value * 10 + (str[i] - '0');
-            i++;
-        }
-
-        values[n++] = value;
-
-        while (isspace(str[i]))
-            i++;
-
-        if (str[i] == '\n' || str[i] == '\0')
+        if (choice == 1)
+            createUser();
+        else if (choice == 2)
+            readUsers();
+        else if (choice == 3)
+            updateUser();
+        else if (choice == 4)
+            deleteUser();
+        else if (choice == 5)
             break;
-
-        if (str[i] != '+' && str[i] != '-' &&
-            str[i] != '*' && str[i] != '/') {
-            printf("Error: Invalid expression.\n");
-            return 0;
-        }
-
-        operators[m++] = str[i];
-        i++;
     }
-
-    if (n != m + 1) {
-        printf("Error: Invalid expression.\n");
-        return 0;
-    }
-
-    for (i = 0; i < m; i++) {
-        if (operators[i] == '*' || operators[i] == '/') {
-
-            if (operators[i] == '/') {
-                if (values[i + 1] == 0) {
-                    printf("Error: Division by zero.\n");
-                    return 0;
-                }
-
-                values[i] = values[i] / values[i + 1];
-            } else {
-                values[i] = values[i] * values[i + 1];
-            }
-
-            int j;
-
-            for (j = i + 1; j < n - 1; j++)
-                values[j] = values[j + 1];
-
-            for (j = i; j < m - 1; j++)
-                operators[j] = operators[j + 1];
-
-            n--;
-            m--;
-            i--;
-        }
-    }
-
-    answer = values[0];
-
-    for (i = 0; i < m; i++) {
-        if (operators[i] == '+')
-            answer += values[i + 1];
-        else
-            answer -= values[i + 1];
-    }
-
-    printf("%d\n", answer);
 
     return 0;
 }
