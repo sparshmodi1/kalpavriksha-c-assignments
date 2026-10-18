@@ -1,8 +1,14 @@
-#include<stdio.h>
+#include <stdio.h>
+#include <ctype.h>
+
 const int STANDARD = 150;
 const int PREMIUM = 250;
 const int RECLINER = 400;
 
+float calculateSubtotal(int tickets_count, int ticket_price)
+{
+    return tickets_count * ticket_price;
+}
 
 float calculateDiscount(float subtotal_amount, int ticket_count)
 {
@@ -16,15 +22,16 @@ float calculateDiscount(float subtotal_amount, int ticket_count)
     }
 }
 
-int main(){
+int main()
+{
     char customer_name[50];
-    printf("Enter Customer Name: ");
-    scanf("%49s", customer_name);
 
-    
+    if (scanf("%49s", customer_name) != 1) {
+        printf("Invalid customer name.\n");
+        return 1;
+    }
 
     int tickets_count;
-    printf("Enter number of tickets between 1 and 20 inclusive: ");
 
     if (scanf("%d", &tickets_count) != 1) {
         printf("Invalid input. Please enter an integer.\n");
@@ -37,31 +44,38 @@ int main(){
     }
 
     int ticket_category;
-    printf("Choose Ticket Category \n 1 = Standard: 150 \n 2 = Premium: 250 \n 3 = Recliner: 400 \n Enter your choice: ");
-    scanf("%d", &ticket_category);
 
-    printf("Customer: %s\n", customer_name);
-
-    float subtotal;
-    switch(ticket_category)
-    {
-    case 1:
-        subtotal = tickets_count * STANDARD;
-        printf("Ticket Category: Standard\n");
-        break;
-    case 2:
-        subtotal = tickets_count * PREMIUM;
-        printf("Ticket Category: Premium\n");
-        break;
-    case 3:
-        subtotal = tickets_count * RECLINER;
-        printf("Ticket Category: Recliner\n");
-        break;
-    default:
-        printf("Invalid category selected\n");
+    if (scanf("%d", &ticket_category) != 1) {
+        printf("Invalid input. Please enter an integer.\n");
         return 1;
     }
 
+    float subtotal;
+
+    switch (ticket_category)
+    {
+        case 1:
+            subtotal = calculateSubtotal(tickets_count, STANDARD);
+            printf("Ticket Category: Standard\n");
+            break;
+
+        case 2:
+            subtotal = calculateSubtotal(tickets_count, PREMIUM);
+            printf("Ticket Category: Premium\n");
+            break;
+
+        case 3:
+            subtotal = calculateSubtotal(tickets_count, RECLINER);
+            printf("Ticket Category: Recliner\n");
+            break;
+
+        default:
+
+            printf("Invalid category selected\n");
+            return 1;
+    }
+    
+    printf("Customer: %s\n", customer_name);
     printf("Tickets: %d\n", tickets_count);
     printf("Subtotal: %.2f\n", subtotal);
 
