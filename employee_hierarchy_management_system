@@ -1,0 +1,293 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Employee {
+    int employee_id;
+    char employee_name[50];
+    char designation[20];
+
+    struct Employee *reporting_manager;
+    struct Employee *reports[100];
+    int report_count;
+};
+
+struct Employee employees[100];
+int employee_count = 0;
+
+
+struct Employee *find_employee(int id) {
+    for (int i = 0; i < 100; i++) {
+        if (employees[i].employee_id == id && id != 0) {
+            return &employees[i];
+        }
+    }
+    return NULL;
+}
+
+
+void add_employee() {
+    int id, manager_id, slot = -1;
+    char name[50], designation[20];
+
+    //checking employeecount has reached to its maximum limit or not.
+    if (employee_count >= 100) {
+        printf("Maximum employee limit reached.\n");
+        return;
+    }
+
+    printf("Enter employee ID: ");
+    if (scanf("%d", &id) != 1) {
+        printf("Invalid ID.\n");
+        while (getchar() != '\n');
+        return;
+    }
+
+    if (id == 0 || find_employee(id) != NULL) {
+        printf("ID is invalid or already exists.\n");
+        return;
+    }
+
+    printf("Enter employee name: ");
+    scanf(" %49[^\n]", name);
+
+    printf("Enter designation: ");
+    scanf(" %19[^\n]", designation);
+
+    printf("Enter manager ID (0 if no manager): ");
+    if (scanf("%d", &manager_id) != 1) {
+        printf("Invalid manager ID.\n");
+        while (getchar() != '\n');
+        return;
+    }
+
+    struct Employee *manager = NULL;
+
+    if (manager_id != 0) {
+        manager = find_employee(manager_id);
+
+        if (manager == NULL) {
+            printf("Manager not found.\n");
+            return;
+        }
+
+        if (manager->report_count >= 100) {
+            printf("Manager has too many direct reports.\n");
+            return;
+        }
+    }
+
+    for (int i = 0; i < 100; i++) {
+        if (employees[i].employee_id == 0) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot == -1) {
+        printf("No space available.\n");
+        return;
+    }
+
+    struct Employee *new_employee = &employees[slot];
+
+    new_employee->employee_id = id;
+    strcpy(new_employee->employee_name, name);
+    strcpy(new_employee->designation, designation);
+    new_employee->reporting_manager = manager;
+    new_employee->report_count = 0;
+
+    if (manager != NULL) {
+        manager->reports[manager->report_count] = new_employee;
+        manager->report_count++;
+    }
+
+    employee_count++;
+    printf("Employee added successfully.\n");
+}
+
+/* Remove employee */
+void remove_employee() {
+    int id;
+
+    printf("Enter employee ID to remove: ");
+    if (scanf("%d", &id) != 1) {
+        printf("Invalid ID.\n");
+        while (getchar() != '\n');
+        return;
+    }
+
+    struct Employee *target = find_employee(id);
+
+    if (target == NULL) {
+        printf("Employee not found.\n");
+        return;
+    }
+
+    struct Employee *manager = target->reporting_manager;
+
+    if (manager != NULL) {
+        int position = -1;
+
+        for (int i = 0; i < manager->report_count; i++) {
+            if (manager->reports[i] == target) {
+                position = i;
+                break;
+            }
+        }
+
+        if (position == -1) {
+            printf("Could not update the hierarchy.\n");
+            return;
+        }
+
+        if (manager->report_count - 1 + target->report_count
+            > 100) {
+            printf("Manager has no space for these employees.\n");
+            return;
+        }
+
+        for (int i = position; i < manager->report_count - 1; i++) {
+            manager->reports[i] = manager->reports[i + 1];
+        }
+
+        manager->report_count--;
+
+        /* Move the removed employee's reports to their manager */
+        for (int i = 0; i < target->report_count; i++) {
+            struct Employee *child = target->reports[i];
+
+            manager->reports[manager->report_count] = child;
+            manager->report_count++;
+            child->reporting_manager = manager;
+        }
+    } else {
+        /* Their reports become top-level employees */
+        for (int i = 0; i < target->report_count; i++) {
+            target->reports[i]->reporting_manager = NULL;
+        }
+    }
+
+    target->employee_id = 0;
+    target->reporting_manager = NULL;
+    target->report_count = 0;
+
+    employee_count--;
+    printf("Employee removed successfully.\n");
+}
+
+/* Count employees under a selected employee */
+int count_employees(struct Employee *employee) {
+    int count = 0;
+
+    for (int i = 0; i < employee->report_count; i++) {
+        count++;
+        count += count_employees(employee->reports[i]);
+    }
+
+    return count;
+}
+
+/* Display hierarchy */
+void display_hierarchy(struct Employee *employee, int level) {
+    for (int i = 0; i < level; i++) {
+        printf("    ");
+    }
+
+    printf("%d - %s - %s\n",
+           employee->employee_id,
+           employee->employee_name,
+           employee->designation);
+
+    for (int i = 0; i < employee->report_count; i++) {
+        display_hierarchy(employee->reports[i], level + 1);
+    }
+}
+
+/* Display one employee's hierarchy */
+void display_selected() {
+    int id;
+
+    printf("Enter employee ID: ");
+    if (scanf("%d", &id) != 1) {
+        printf("Invalid ID.\n");
+        while (getchar() != '\n');
+        return;
+    }
+
+    struct Employee *employee = find_employee(id);
+
+    if (employee == NULL) {
+        printf("Employee not found.\n");
+        return;
+    }
+
+    display_hierarchy(employee, 0);
+    printf("Total employees under %d: %d\n",
+           employee->employee_id,
+           count_employees(employee));
+}
+
+/* Display the complete hierarchy */
+void display_all() {
+    if (employee_count == 0) {
+        printf("No employees available.\n");
+        return;
+    }
+
+    for (int i = 0; i < 100; i++) {
+        if (employees[i].employee_id != 0 &&
+            employees[i].reporting_manager == NULL) {
+            display_hierarchy(&employees[i], 0);
+        }
+    }
+
+    printf("Total employees: %d\n", employee_count);
+}
+
+int main() {
+    int choice;
+
+    do {
+        printf("\n===== Employee Hierarchy Management System =====\n");
+        printf("\n1. Add employee\n");
+        printf("2. Remove employee\n");
+        printf("3. Display employee hierarchy\n");
+        printf("4. Display complete hierarchy\n");
+        printf("5. Exit\n");
+        printf("Enter choice: ");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid choice.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                add_employee();
+                break;
+
+            case 2:
+                remove_employee();
+                break;
+
+            case 3:
+                display_selected();
+                break;
+
+            case 4:
+                display_all();
+                break;
+
+            case 5:
+                printf("Program ended.\n");
+                break;
+
+            default:
+                printf("Invalid choice.\n");
+        }
+
+    } while (choice != 5);
+
+    return 0;
+}
